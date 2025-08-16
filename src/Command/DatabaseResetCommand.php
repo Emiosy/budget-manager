@@ -2,6 +2,7 @@
 
 namespace App\Command;
 
+use Doctrine\DBAL\Connection;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -17,6 +18,11 @@ use Symfony\Component\Process\Process;
 )]
 class DatabaseResetCommand extends Command
 {
+    public function __construct(
+        private Connection $connection
+    ) {
+        parent::__construct();
+    }
     protected function configure(): void
     {
         $this
@@ -59,29 +65,42 @@ WARNING: This will destroy all existing data in the tables!')
             }
         }
 
-        $io->section('Step 1: Disabling foreign key constraints and dropping tables');
+        $io->section('Step 1: Dropping all tables with proper transaction handling');
         
-        // Disable foreign key checks for SQLite
-        if (!$this->runCommand(['php', 'bin/console', 'doctrine:query:sql', 'PRAGMA foreign_keys = OFF'], $io)) {
-            $io->warning('Could not disable foreign key constraints (continuing anyway)');
-        }
-        
-        // Drop all tables (but keep database file)
-        if (!$this->runCommand(['php', 'bin/console', 'doctrine:schema:drop', '--force'], $io)) {
+        try {
+            // Start transaction and disable foreign key constraints
+            $this->connection->beginTransaction();
+            $io->text('Starting transaction and disabling foreign key constraints...');
+            
+            $this->connection->executeStatement('PRAGMA foreign_keys = OFF');
+            
+            // Get all table names
+            $tables = $this->connection->createSchemaManager()->listTableNames();
+            $io->text(sprintf('Found %d tables to drop', count($tables)));
+            
+            // Drop all tables
+            foreach ($tables as $table) {
+                $io->text("Dropping table: {$table}");
+                $this->connection->executeStatement("DROP TABLE IF EXISTS `{$table}`");
+            }
+            
+            // Re-enable foreign key constraints
+            $this->connection->executeStatement('PRAGMA foreign_keys = ON');
+            
+            // Commit transaction
+            $this->connection->commit();
+            $io->success('All tables dropped successfully in transaction');
+            
+        } catch (\Exception $e) {
+            $this->connection->rollBack();
+            $io->error('Failed to drop tables: ' . $e->getMessage());
             return Command::FAILURE;
         }
-        $io->success('All tables dropped successfully');
 
         $io->section('Step 2: Running migrations to recreate schema');
         if (!$this->runCommand(['php', 'bin/console', 'doctrine:migrations:migrate', '--no-interaction'], $io)) {
             return Command::FAILURE;
         }
-        
-        // Re-enable foreign key checks for SQLite
-        if (!$this->runCommand(['php', 'bin/console', 'doctrine:query:sql', 'PRAGMA foreign_keys = ON'], $io)) {
-            $io->warning('Could not re-enable foreign key constraints (continuing anyway)');
-        }
-        
         $io->success('Database schema recreated via migrations');
 
         if (!$input->getOption('no-fixtures')) {
@@ -99,10 +118,11 @@ WARNING: This will destroy all existing data in the tables!')
         $io->success('🎉 Database reset completed successfully!');
         
         if (!$input->getOption('no-fixtures')) {
-            $io->table(['Test Account'], [
-                ['Email: test@example.com'],
-                ['Password: password123'],
-                ['3 budgets with sample transactions']
+            $io->table(['Test Accounts'], [
+                ['Email: test@example.com | Password: password123'],
+                ['Email: anna.kowalska@example.com | Password: password456'],
+                ['Email: jan.nowak@example.com | Password: password789'],
+                ['Each user has multiple budgets with sample transactions']
             ]);
         }
 

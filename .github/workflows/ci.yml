@@ -1,0 +1,129 @@
+name: CI
+
+on:
+  push:
+    branches: [ master, main, develop ]
+  pull_request:
+    branches: [ master, main, develop ]
+
+jobs:
+  tests:
+    name: Tests (PHP ${{ matrix.php-version }})
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        php-version: ['8.1', '8.2', '8.3']
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ matrix.php-version }}
+        extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, dom, filter, gd, iconv, json, mbstring, pdo
+        coverage: none
+        
+    - name: Cache Composer packages
+      id: composer-cache
+      uses: actions/cache@v3
+      with:
+        path: vendor
+        key: ${{ runner.os }}-php-${{ matrix.php-version }}-${{ hashFiles('**/composer.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-php-${{ matrix.php-version }}-
+          
+    - name: Install dependencies
+      run: composer install --prefer-dist --no-progress --no-suggest --no-interaction
+      
+    - name: Create test database
+      run: |
+        touch var/data_test.db
+        chmod 664 var/data_test.db
+        
+    - name: Generate JWT keys
+      run: php bin/console lexik:jwt:generate-keypair --skip-if-exists
+      
+    - name: Setup database
+      run: |
+        php bin/console doctrine:database:create --env=test --if-not-exists
+        php bin/console doctrine:migrations:migrate --no-interaction --env=test
+        
+    - name: Run PHPUnit tests
+      run: php vendor/bin/phpunit --coverage-text
+      
+    - name: Check code style (if PHP CS Fixer is available)
+      run: |
+        if [ -f vendor/bin/php-cs-fixer ]; then
+          vendor/bin/php-cs-fixer fix --dry-run --diff --verbose
+        else
+          echo "PHP CS Fixer not installed, skipping code style check"
+        fi
+      continue-on-error: true
+      
+    - name: Static analysis (if PHPStan is available)
+      run: |
+        if [ -f vendor/bin/phpstan ]; then
+          vendor/bin/phpstan analyse src --level=1
+        else
+          echo "PHPStan not installed, skipping static analysis"
+        fi
+      continue-on-error: true
+
+  build-and-deploy:
+    name: Build Assets
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install npm dependencies
+      run: npm ci
+      
+    - name: Build assets
+      run: npm run build
+      
+    - name: Check if assets are committed
+      run: |
+        if [ -n "$(git status --porcelain public/build)" ]; then
+          echo "Built assets differ from committed assets"
+          git status --porcelain public/build
+          exit 1
+        else
+          echo "Built assets match committed assets"
+        fi
+
+  security:
+    name: Security Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.1'
+        
+    - name: Install dependencies
+      run: composer install --prefer-dist --no-progress --no-interaction
+      
+    - name: Security check (if security-checker is available)
+      run: |
+        if [ -f vendor/bin/security-checker ]; then
+          vendor/bin/security-checker security:check composer.lock
+        else
+          echo "Security checker not installed, using composer audit"
+          composer audit --format=plain
+        fi
+      continue-on-error: false

@@ -44,6 +44,14 @@ php bin/console doctrine:fixtures:load
 # Wygenerowanie JWT kluczy
 php bin/console lexik:jwt:generate-keypair
 
+# Testy
+php vendor/bin/phpunit                   # Wszystkie testy
+php vendor/bin/phpunit tests/Entity/     # Tylko testy encji
+php vendor/bin/phpunit tests/DTO/        # Tylko testy DTO
+php vendor/bin/phpunit tests/Controller/ # Tylko testy kontrolerów
+php vendor/bin/phpunit --coverage-text   # Z pokryciem (wymaga Xdebug)
+php vendor/bin/phpunit --testdox         # Czytelny format wyników
+
 # Cache
 php bin/console cache:clear
 
@@ -75,7 +83,7 @@ php bin/console debug:container
 - `/budgets` - Zarządzanie budżetami
 
 ## 📚 Dokumentacja API
-OpenAPI/Swagger dostępna pod: `/api/doc`
+OpenAPI/Swagger dostępna pod: `/api/docs` (dostępna bez autoryzacji)
 
 ## 🔧 Konfiguracja
 
@@ -87,9 +95,12 @@ JWT_PUBLIC_KEY=%kernel.project_dir%/config/jwt/public.pem
 JWT_PASSPHRASE=XYZ123
 ```
 
-### Konto testowe
-- **Email**: test@example.com
-- **Password**: password123
+### Konta testowe
+- **Test User**: test@example.com | password123
+- **Anna Kowalska**: anna.kowalska@example.com | password456  
+- **Jan Nowak**: jan.nowak@example.com | password789
+
+Każdy użytkownik ma różne budżety i przykładowe transakcje.
 
 ## 🚨 Ważne Uwagi
 
@@ -125,6 +136,46 @@ npm install
 npm run build
 ```
 
+## 🧪 Testowanie
+
+### Uruchamianie testów
+```bash
+# Wszystkie testy
+php vendor/bin/phpunit
+
+# Tylko testy encji
+php vendor/bin/phpunit tests/Entity/
+
+# Tylko testy DTO
+php vendor/bin/phpunit tests/DTO/
+
+# Z pokryciem kodu
+php vendor/bin/phpunit --coverage-text
+```
+
+### Pokrycie testowe
+- **Testy encji**: User, Budget, Transaction (49 testów)
+- **Testy DTO**: Walidacja wszystkich DTO (94 testy)
+- **Łącznie**: 143 testy jednostkowe
+
+## 🚀 CI/CD
+
+### GitHub Actions
+Automatyczne testy uruchamiane przy:
+- Push na branchi `master`/`main`
+- Tworzeniu Pull Request
+- Testy na PHP 8.1, 8.2, 8.3
+- Budowanie assets
+- Sprawdzanie bezpieczeństwa
+
+### Workflow
+1. Stwórz branch feature z `master`
+2. Wprowadź zmiany i commituj
+3. Pushuj branch i utwórz Pull Request
+4. GitHub Actions automatycznie uruchamia testy
+5. Sprawdź wyniki w zakładce Actions
+6. Zmerguj po upewnieniu się, że testy przechodzą
+
 ## 📝 TODO / Rozszerzenia
 - Kategorie transakcji
 - Eksport danych CSV/Excel
@@ -132,6 +183,8 @@ npm run build
 - Powiadomienia o limitach
 - Aplikacja mobilna
 - Integracje bankowe
+- Testy funkcjonalne
+- Testy E2E
 
 ## 🔗 Przydatne Linki
 - [Symfony Docs](https://symfony.com/doc)

@@ -31,7 +31,7 @@ class Budget
     #[OA\Property(description: 'Optional budget description', example: 'Money saved for summer vacation')]
     private ?string $description = null;
 
-    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'budgets')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
 

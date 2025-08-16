@@ -36,6 +36,6 @@ nelmio_api_doc:
                     description: 'Enter your JWT token in the format: Bearer {token}'
     areas:
         path_patterns:
-            - ^/api(?!/doc$)
+            - ^/api(?!/docs$)
     models:
         use_jms: false

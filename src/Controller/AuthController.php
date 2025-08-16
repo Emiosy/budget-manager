@@ -14,7 +14,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use App\DTO\UserLoginDTO;
 use App\DTO\UserRegistrationDTO;
 use App\DTO\ChangePasswordDTO;
-use Nelmio\ApiDocBundle\Annotation\Model;
+use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
 
 #[Route('/api')]
