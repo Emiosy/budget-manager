@@ -17,11 +17,12 @@ use OpenApi\Attributes as OA;
 
 #[Route('/api/budgets')]
 #[IsGranted('ROLE_USER')]
+#[OA\Tag(name: 'Budgets', description: 'Budget management operations - create, view and manage your personal budgets')]
 class BudgetController extends AbstractController
 {
     #[Route('', name: 'api_budgets_index', methods: ['GET'])]
     #[OA\Get(
-        path: '/api/budgets',
+        path: '/budgets',
         summary: 'Get all user budgets',
         description: 'Returns a list of all budgets belonging to the authenticated user, including calculated balances.',
         tags: ['Budgets'],
@@ -77,7 +78,7 @@ class BudgetController extends AbstractController
 
     #[Route('', name: 'api_budgets_create', methods: ['POST'])]
     #[OA\Post(
-        path: '/api/budgets',
+        path: '/budgets',
         summary: 'Create new budget',
         description: 'Creates a new budget for the authenticated user with a required name and optional description.',
         tags: ['Budgets'],
@@ -169,28 +170,56 @@ class BudgetController extends AbstractController
 
     #[Route('/{id}', name: 'api_budgets_show', methods: ['GET'])]
     #[OA\Get(
-        path: '/api/budgets/{id}',
-        summary: 'Get specific budget',
+        path: '/budgets/{id}',
+        summary: 'Get specific budget details',
+        description: 'Retrieves detailed information about a specific budget, including its current balance calculated from all transactions.',
+        tags: ['Budgets'],
         security: [['bearerAuth' => []]],
         parameters: [
-            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'Unique budget identifier (UUID)',
+                schema: new OA\Schema(type: 'string', format: 'uuid'),
+                example: 'a4b1c2d3-e4f5-6789-abcd-ef1234567890'
+            )
         ],
         responses: [
             new OA\Response(
                 response: 200,
-                description: 'Budget details',
+                description: 'Budget details with current balance',
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
-                        'id' => new OA\Property(property: 'id', type: 'string', format: 'uuid'),
-                        'name' => new OA\Property(property: 'name', type: 'string'),
-                        'description' => new OA\Property(property: 'description', type: 'string', nullable: true),
-                        'balance' => new OA\Property(property: 'balance', type: 'number', format: 'float'),
-                        'created_at' => new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
+                        'id' => new OA\Property(property: 'id', type: 'string', format: 'uuid', example: 'a4b1c2d3-e4f5-6789-abcd-ef1234567890'),
+                        'name' => new OA\Property(property: 'name', type: 'string', example: 'Holiday Savings'),
+                        'description' => new OA\Property(property: 'description', type: 'string', nullable: true, example: 'Money for summer vacation'),
+                        'balance' => new OA\Property(property: 'balance', type: 'number', format: 'float', example: 1250.50),
+                        'created_at' => new OA\Property(property: 'created_at', type: 'string', format: 'date-time', example: '2025-01-15 10:30:00'),
                     ]
                 )
             ),
-            new OA\Response(response: 404, description: 'Budget not found')
+            new OA\Response(
+                response: 404,
+                description: 'Budget not found or access denied',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        'error' => new OA\Property(property: 'error', type: 'string', example: 'Budget not found')
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Authentication required',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        'message' => new OA\Property(property: 'message', type: 'string', example: 'JWT Token not found')
+                    ]
+                )
+            )
         ]
     )]
     public function show(string $id, EntityManagerInterface $entityManager): JsonResponse

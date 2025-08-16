@@ -159,7 +159,7 @@ The project uses GitHub Actions for continuous integration.
 ### Automated Testing
 
 On every push and pull request to `master`/`main` branches:
-- Tests run on PHP 8.1, 8.2, and 8.3
+- Tests run on PHP 8.1 and 8.2
 - Database setup and migrations
 - JWT key generation
 - PHPUnit test execution

@@ -10,8 +10,8 @@ nelmio_api_doc:
                 
                 ## Getting Started
                 
-                1. Register a new user account using `/api/register`
-                2. Login with your credentials using `/api/login` to get a JWT token
+                1. Register a new user account using `/auth/register`
+                2. Login with your credentials using `/auth/login` to get a JWT token
                 3. Include the JWT token in the Authorization header: `Bearer {your-jwt-token}`
                 4. Start managing your budgets and transactions!
                 
@@ -21,12 +21,6 @@ nelmio_api_doc:
                 - **Email**: test@example.com
                 - **Password**: password123
             version: 1.0.0
-            contact:
-                name: Budget Manager Team
-                email: support@budgetmanager.local
-        servers:
-            - url: /api
-              description: API base path
         components:
             securitySchemes:
                 bearerAuth:
@@ -34,8 +28,530 @@ nelmio_api_doc:
                     scheme: bearer
                     bearerFormat: JWT
                     description: 'Enter your JWT token in the format: Bearer {token}'
+        paths:
+            '/api/auth/register':
+                post:
+                    tags: ['Authentication']
+                    summary: 'Register a new user account'
+                    description: 'Creates a new user account with email and password. The user will be active by default.'
+                    requestBody:
+                        required: true
+                        content:
+                            application/json:
+                                schema:
+                                    type: object
+                                    required: [email, password]
+                                    properties:
+                                        email:
+                                            type: string
+                                            format: email
+                                            example: 'john@example.com'
+                                        password:
+                                            type: string
+                                            minLength: 6
+                                            example: 'password123'
+                    responses:
+                        '201':
+                            description: 'User registered successfully'
+                            content:
+                                application/json:
+                                    schema:
+                                        type: object
+                                        properties:
+                                            message:
+                                                type: string
+                                                example: 'User registered successfully'
+                                            user_id:
+                                                type: string
+                                                format: uuid
+                                                example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+                        '400':
+                            description: 'Validation error or user already exists'
+                            content:
+                                application/json:
+                                    schema:
+                                        type: object
+                                        properties:
+                                            error:
+                                                type: string
+                                                example: 'User with this email already exists'
+                                            errors:
+                                                type: array
+                                                items:
+                                                    type: string
+                                                example: ['Password must be at least 6 characters long']
+            '/api/auth/login':
+                post:
+                    tags: ['Authentication']
+                    summary: 'Authenticate user and get JWT token'
+                    description: 'Authenticates user with email and password, returns a JWT token for API access.'
+                    requestBody:
+                        required: true
+                        content:
+                            application/json:
+                                schema:
+                                    type: object
+                                    required: [username, password]
+                                    properties:
+                                        username:
+                                            type: string
+                                            format: email
+                                            example: 'test@example.com'
+                                        password:
+                                            type: string
+                                            example: 'password123'
+                    responses:
+                        '200':
+                            description: 'Authentication successful, JWT token returned'
+                            content:
+                                application/json:
+                                    schema:
+                                        type: object
+                                        properties:
+                                            token:
+                                                type: string
+                                                example: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJ1c2VybmFtZSI6InRlc3RAZXhhbXBsZS5jb20iLCJyb2xlcyI6WyJST0xFX1VTRVIiXSwiaWF0IjoxNjQyNjg0ODAwLCJleHAiOjE2NDI2ODg0MDB9.example'
+                        '401':
+                            description: 'Invalid credentials or inactive account'
+                            content:
+                                application/json:
+                                    schema:
+                                        type: object
+                                        properties:
+                                            message:
+                                                type: string
+                                                example: 'Invalid credentials.'
+            '/api/auth/change-password':
+                post:
+                    tags: ['Authentication']
+                    summary: 'Change user password'
+                    description: 'Changes the authenticated user password. Requires current password verification.'
+                    security:
+                        - bearerAuth: []
+                    requestBody:
+                        required: true
+                        content:
+                            application/json:
+                                schema:
+                                    type: object
+                                    required: [currentPassword, newPassword, confirmPassword]
+                                    properties:
+                                        currentPassword:
+                                            type: string
+                                            example: 'oldpassword123'
+                                        newPassword:
+                                            type: string
+                                            minLength: 6
+                                            example: 'newpassword123'
+                                        confirmPassword:
+                                            type: string
+                                            example: 'newpassword123'
+                    responses:
+                        '200':
+                            description: 'Password changed successfully'
+                            content:
+                                application/json:
+                                    schema:
+                                        type: object
+                                        properties:
+                                            message:
+                                                type: string
+                                                example: 'Password changed successfully'
+                        '400':
+                            description: 'Validation error or incorrect current password'
+                            content:
+                                application/json:
+                                    schema:
+                                        type: object
+                                        properties:
+                                            error:
+                                                type: string
+                                                example: 'Current password is incorrect'
+                                            errors:
+                                                type: array
+                                                items:
+                                                    type: string
+                                                example: ['New password must be at least 6 characters long']
+                        '401':
+                            description: 'Authentication required'
+                            content:
+                                application/json:
+                                    schema:
+                                        type: object
+                                        properties:
+                                            message:
+                                                type: string
+                                                example: 'JWT Token not found'
+            '/api/budgets':
+                get:
+                    tags: ['Budgets']
+                    summary: 'Get all user budgets'
+                    description: 'Returns a list of all budgets belonging to the authenticated user, including calculated balances.'
+                    security:
+                        - bearerAuth: []
+                    responses:
+                        '200':
+                            description: 'List of user budgets with calculated balances'
+                            content:
+                                application/json:
+                                    schema:
+                                        type: array
+                                        items:
+                                            type: object
+                                            properties:
+                                                id:
+                                                    type: string
+                                                    format: uuid
+                                                    example: 'a4b1c2d3-e4f5-6789-abcd-ef1234567890'
+                                                name:
+                                                    type: string
+                                                    example: 'Holiday Savings'
+                                                description:
+                                                    type: string
+                                                    nullable: true
+                                                    example: 'Money for summer vacation'
+                                                balance:
+                                                    type: number
+                                                    format: float
+                                                    example: 1250.50
+                                                created_at:
+                                                    type: string
+                                                    format: date-time
+                                                    example: '2025-01-15 10:30:00'
+                        '401':
+                            description: 'Authentication required'
+                            content:
+                                application/json:
+                                    schema:
+                                        type: object
+                                        properties:
+                                            message:
+                                                type: string
+                                                example: 'JWT Token not found'
+                post:
+                    tags: ['Budgets']
+                    summary: 'Create new budget'
+                    description: 'Creates a new budget for the authenticated user with a required name and optional description.'
+                    security:
+                        - bearerAuth: []
+                    requestBody:
+                        required: true
+                        content:
+                            application/json:
+                                schema:
+                                    type: object
+                                    required: [name]
+                                    properties:
+                                        name:
+                                            type: string
+                                            maxLength: 255
+                                            example: 'Holiday Savings'
+                                        description:
+                                            type: string
+                                            nullable: true
+                                            example: 'Money for summer vacation'
+                    responses:
+                        '201':
+                            description: 'Budget created successfully'
+                            content:
+                                application/json:
+                                    schema:
+                                        type: object
+                                        properties:
+                                            id:
+                                                type: string
+                                                format: uuid
+                                                example: 'a4b1c2d3-e4f5-6789-abcd-ef1234567890'
+                                            name:
+                                                type: string
+                                                example: 'Holiday Savings'
+                                            description:
+                                                type: string
+                                                nullable: true
+                                                example: 'Money for summer vacation'
+                                            balance:
+                                                type: number
+                                                format: float
+                                                example: 0.00
+                                            created_at:
+                                                type: string
+                                                format: date-time
+                                                example: '2025-01-15 10:30:00'
+                        '400':
+                            description: 'Validation error - invalid data provided'
+                            content:
+                                application/json:
+                                    schema:
+                                        type: object
+                                        properties:
+                                            error:
+                                                type: string
+                                                example: 'Budget name is required'
+                                            errors:
+                                                type: array
+                                                items:
+                                                    type: string
+                                                example: ['Budget name cannot exceed 255 characters']
+                        '401':
+                            description: 'Authentication required'
+                            content:
+                                application/json:
+                                    schema:
+                                        type: object
+                                        properties:
+                                            message:
+                                                type: string
+                                                example: 'JWT Token not found'
+            '/api/budgets/{id}':
+                get:
+                    tags: ['Budgets']
+                    summary: 'Get specific budget details'
+                    description: 'Retrieves detailed information about a specific budget, including its current balance calculated from all transactions.'
+                    security:
+                        - bearerAuth: []
+                    parameters:
+                        - name: id
+                          in: path
+                          required: true
+                          description: 'Unique budget identifier (UUID)'
+                          schema:
+                              type: string
+                              format: uuid
+                          example: 'a4b1c2d3-e4f5-6789-abcd-ef1234567890'
+                    responses:
+                        '200':
+                            description: 'Budget details with current balance'
+                            content:
+                                application/json:
+                                    schema:
+                                        type: object
+                                        properties:
+                                            id:
+                                                type: string
+                                                format: uuid
+                                                example: 'a4b1c2d3-e4f5-6789-abcd-ef1234567890'
+                                            name:
+                                                type: string
+                                                example: 'Holiday Savings'
+                                            description:
+                                                type: string
+                                                nullable: true
+                                                example: 'Money for summer vacation'
+                                            balance:
+                                                type: number
+                                                format: float
+                                                example: 1250.50
+                                            created_at:
+                                                type: string
+                                                format: date-time
+                                                example: '2025-01-15 10:30:00'
+                        '404':
+                            description: 'Budget not found or access denied'
+                            content:
+                                application/json:
+                                    schema:
+                                        type: object
+                                        properties:
+                                            error:
+                                                type: string
+                                                example: 'Budget not found'
+                        '401':
+                            description: 'Authentication required'
+                            content:
+                                application/json:
+                                    schema:
+                                        type: object
+                                        properties:
+                                            message:
+                                                type: string
+                                                example: 'JWT Token not found'
+            '/api/budgets/{budgetId}/transactions':
+                get:
+                    tags: ['Transactions']
+                    summary: 'Get all transactions for a budget'
+                    description: 'Retrieves a complete list of all income and expense transactions for a specific budget, ordered by creation date.'
+                    security:
+                        - bearerAuth: []
+                    parameters:
+                        - name: budgetId
+                          in: path
+                          required: true
+                          description: 'Unique budget identifier (UUID)'
+                          schema:
+                              type: string
+                              format: uuid
+                          example: 'a4b1c2d3-e4f5-6789-abcd-ef1234567890'
+                    responses:
+                        '200':
+                            description: 'List of all transactions in the budget'
+                            content:
+                                application/json:
+                                    schema:
+                                        type: array
+                                        items:
+                                            type: object
+                                            properties:
+                                                id:
+                                                    type: integer
+                                                    format: int64
+                                                    example: 15
+                                                amount:
+                                                    type: number
+                                                    format: float
+                                                    example: 250.00
+                                                type:
+                                                    type: string
+                                                    enum: ['income', 'expense']
+                                                    example: 'income'
+                                                comment:
+                                                    type: string
+                                                    example: 'Salary payment'
+                                                created_at:
+                                                    type: string
+                                                    format: date-time
+                                                    example: '2025-01-15 14:30:00'
+                                        example:
+                                            - id: 15
+                                              amount: 1500.00
+                                              type: 'income'
+                                              comment: 'Monthly salary'
+                                              created_at: '2025-01-15 09:00:00'
+                                            - id: 16
+                                              amount: 450.50
+                                              type: 'expense'
+                                              comment: 'Groceries and household items'
+                                              created_at: '2025-01-15 18:30:00'
+                        '404':
+                            description: 'Budget not found or access denied'
+                            content:
+                                application/json:
+                                    schema:
+                                        type: object
+                                        properties:
+                                            error:
+                                                type: string
+                                                example: 'Budget not found'
+                        '401':
+                            description: 'Authentication required'
+                            content:
+                                application/json:
+                                    schema:
+                                        type: object
+                                        properties:
+                                            message:
+                                                type: string
+                                                example: 'JWT Token not found'
+                post:
+                    tags: ['Transactions']
+                    summary: 'Add new transaction to budget'
+                    description: 'Creates a new income or expense transaction within a specific budget. The transaction amount will immediately affect the budget balance calculation.'
+                    security:
+                        - bearerAuth: []
+                    parameters:
+                        - name: budgetId
+                          in: path
+                          required: true
+                          description: 'Unique budget identifier (UUID)'
+                          schema:
+                              type: string
+                              format: uuid
+                          example: 'a4b1c2d3-e4f5-6789-abcd-ef1234567890'
+                    requestBody:
+                        description: 'Transaction data'
+                        required: true
+                        content:
+                            application/json:
+                                schema:
+                                    type: object
+                                    required: [amount, type, comment]
+                                    properties:
+                                        amount:
+                                            type: number
+                                            format: float
+                                            description: 'Transaction amount (positive number for both income and expenses)'
+                                            minimum: 0.01
+                                            example: 250.50
+                                        type:
+                                            type: string
+                                            enum: ['income', 'expense']
+                                            description: 'Transaction type - income adds to budget, expense subtracts from budget'
+                                            example: 'income'
+                                        comment:
+                                            type: string
+                                            description: 'Description or note about the transaction'
+                                            maxLength: 255
+                                            example: 'Freelance project payment'
+                                example:
+                                    amount: 750.00
+                                    type: 'income'
+                                    comment: 'Freelance web development project'
+                    responses:
+                        '201':
+                            description: 'Transaction created successfully'
+                            content:
+                                application/json:
+                                    schema:
+                                        type: object
+                                        properties:
+                                            id:
+                                                type: integer
+                                                format: int64
+                                                example: 42
+                                            amount:
+                                                type: number
+                                                format: float
+                                                example: 750.00
+                                            type:
+                                                type: string
+                                                example: 'income'
+                                            comment:
+                                                type: string
+                                                example: 'Freelance web development project'
+                                            created_at:
+                                                type: string
+                                                format: date-time
+                                                example: '2025-01-16 10:15:30'
+                        '400':
+                            description: 'Validation error - invalid data provided'
+                            content:
+                                application/json:
+                                    schema:
+                                        type: object
+                                        properties:
+                                            error:
+                                                type: string
+                                                example: 'Amount, type and comment are required'
+                                            errors:
+                                                type: array
+                                                items:
+                                                    type: string
+                                                example: ['Amount must be greater than 0', 'Transaction type must be either income or expense']
+                        '404':
+                            description: 'Budget not found or access denied'
+                            content:
+                                application/json:
+                                    schema:
+                                        type: object
+                                        properties:
+                                            error:
+                                                type: string
+                                                example: 'Budget not found'
+                        '401':
+                            description: 'Authentication required'
+                            content:
+                                application/json:
+                                    schema:
+                                        type: object
+                                        properties:
+                                            message:
+                                                type: string
+                                                example: 'JWT Token not found'
     areas:
         path_patterns:
             - ^/api(?!/docs$)
     models:
         use_jms: false
+    # Force using PHP 8 attributes instead of annotations
+    html_config:
+        # Additional config for Swagger UI
+        assets_mode: cdn

@@ -48,7 +48,6 @@ php bin/console lexik:jwt:generate-keypair
 php vendor/bin/phpunit                   # Wszystkie testy
 php vendor/bin/phpunit tests/Entity/     # Tylko testy encji
 php vendor/bin/phpunit tests/DTO/        # Tylko testy DTO
-php vendor/bin/phpunit tests/Controller/ # Tylko testy kontrolerów
 php vendor/bin/phpunit --coverage-text   # Z pokryciem (wymaga Xdebug)
 php vendor/bin/phpunit --testdox         # Czytelny format wyników
 
@@ -68,13 +67,22 @@ php bin/console debug:container
 - **Transaction**: Transakcje (income/expense) przypisane do budżetów
 
 ### API Endpoints
-- `POST /api/register` - Rejestracja
-- `POST /api/login` - Logowanie (JWT)
-- `GET /api/budgets` - Lista budżetów
-- `POST /api/budgets` - Tworzenie budżetu
-- `GET /api/budgets/{id}` - Szczegóły budżetu
-- `GET /api/budgets/{id}/transactions` - Lista transakcji
-- `POST /api/budgets/{id}/transactions` - Dodanie transakcji
+
+**Autoryzacja** (Authentication)
+- `POST /auth/register` - Rejestracja nowego użytkownika
+- `POST /auth/login` - Logowanie i pobranie tokena JWT
+- `POST /auth/change-password` - Zmiana hasła (wymaga autoryzacji)
+
+**Budżety** (Budgets)
+- `GET /budgets` - Lista budżetów użytkownika
+- `POST /budgets` - Tworzenie nowego budżetu
+- `GET /budgets/{id}` - Szczegóły konkretnego budżetu
+
+**Transakcje** (Transactions)
+- `GET /budgets/{budgetId}/transactions` - Lista transakcji w budżecie
+- `POST /budgets/{budgetId}/transactions` - Dodanie transakcji do budżetu
+
+> **Uwaga**: Wszystkie endpointy API są dostępne pod prefiksem `/api/`
 
 ### Web Interface
 - `/` - Dashboard
@@ -164,7 +172,7 @@ php vendor/bin/phpunit --coverage-text
 Automatyczne testy uruchamiane przy:
 - Push na branchi `master`/`main`
 - Tworzeniu Pull Request
-- Testy na PHP 8.1, 8.2, 8.3
+- Testy na PHP 8.1, 8.2
 - Budowanie assets
 - Sprawdzanie bezpieczeństwa
 
