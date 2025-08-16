@@ -1,0 +1,47 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Rejestracja - Budget Manager{% endblock %}
+
+{% block body %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card">
+            <div class="card-header text-center">
+                <h4 class="mb-0">
+                    <i class="fas fa-user-plus me-2"></i>Rejestracja
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" name="email" id="email" class="form-control" required autofocus>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Hasło</label>
+                        <input type="password" name="password" id="password" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password_confirm" class="form-label">Potwierdź hasło</label>
+                        <input type="password" name="password_confirm" id="password_confirm" class="form-control" required>
+                    </div>
+
+                    <div class="d-grid">
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fas fa-user-plus me-2"></i>Zarejestruj się
+                        </button>
+                    </div>
+                </form>
+
+                <hr>
+                
+                <div class="text-center">
+                    <p class="mb-0">Masz już konto? <a href="{{ path('login') }}">Zaloguj się</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

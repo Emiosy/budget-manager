@@ -1,0 +1,210 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ budget.name }} - Budget Manager{% endblock %}
+
+{% block body %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3 mb-1">{{ budget.name }}</h1>
+                {% if budget.description %}
+                    <p class="text-muted mb-0">{{ budget.description }}</p>
+                {% endif %}
+            </div>
+            <div class="text-end">
+                <div class="h4 mb-1 {% if budget.balance >= 0 %}text-success{% else %}text-danger{% endif %}">
+                    {{ budget.balance|number_format(2, ',', ' ') }} zł
+                </div>
+                <small class="text-muted">Saldo budżetu</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>Transakcje
+                </h5>
+                <button type="button" 
+                        class="btn btn-primary btn-sm" 
+                        data-controller="modal" 
+                        data-action="click->modal#openCreateTransaction"
+                        data-modal-budget-id-param="{{ budget.id }}"
+                        data-modal-budget-name-param="{{ budget.name }}"
+                        data-modal-source-param="budgets_show">
+                    <i class="fas fa-plus me-2"></i>Nowa transakcja
+                </button>
+            </div>
+            <div class="card-body">
+                {% if transactions is empty %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Brak transakcji</h5>
+                        <p class="text-muted">Dodaj pierwszą transakcję do tego budżetu</p>
+                        <button type="button" 
+                                class="btn btn-primary" 
+                                data-controller="modal" 
+                                data-action="click->modal#openCreateTransaction"
+                                data-modal-budget-id-param="{{ budget.id }}"
+                                data-modal-budget-name-param="{{ budget.name }}"
+                                data-modal-source-param="budgets_show">
+                            <i class="fas fa-plus me-2"></i>Dodaj transakcję
+                        </button>
+                    </div>
+                {% else %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Typ</th>
+                                    <th>Komentarz</th>
+                                    <th class="text-end">Kwota</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in transactions %}
+                                    <tr>
+                                        <td>
+                                            <small class="text-muted">{{ transaction.createdAt|date('d.m.Y H:i') }}</small>
+                                        </td>
+                                        <td>
+                                            {% if transaction.type == 'income' %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-arrow-up me-1"></i>Wpływ
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-arrow-down me-1"></i>Wydatek
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ transaction.comment }}</td>
+                                        <td class="text-end">
+                                            <strong class="{% if transaction.type == 'income' %}text-success{% else %}text-danger{% endif %}">
+                                                {% if transaction.type == 'income' %}+{% else %}-{% endif %}{{ transaction.amount|number_format(2, ',', ' ') }} zł
+                                            </strong>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line me-2"></i>Statystyki
+                </h5>
+            </div>
+            <div class="card-body">
+                {% set totalIncome = 0 %}
+                {% set totalExpense = 0 %}
+                {% for transaction in transactions %}
+                    {% if transaction.type == 'income' %}
+                        {% set totalIncome = totalIncome + transaction.amount %}
+                    {% else %}
+                        {% set totalExpense = totalExpense + transaction.amount %}
+                    {% endif %}
+                {% endfor %}
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Łączne wpływy:</span>
+                        <strong class="text-success">{{ totalIncome|number_format(2, ',', ' ') }} zł</strong>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Łączne wydatki:</span>
+                        <strong class="text-danger">{{ totalExpense|number_format(2, ',', ' ') }} zł</strong>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Liczba transakcji:</span>
+                        <strong>{{ transactions|length }}</strong>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Utworzono:</span>
+                        <strong>{{ budget.createdAt|date('d.m.Y') }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-body text-center">
+                <a href="{{ path('budgets_index') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left me-2"></i>Powrót do budżetów
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Transaction Modal -->
+<div class="modal fade" id="createTransactionModal" tabindex="-1" aria-labelledby="createTransactionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createTransactionModalLabel">
+                    <i class="fas fa-plus me-2"></i>Nowa transakcja
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="createTransactionForm" method="post">
+                <div class="modal-body">
+                    <div class="mb-3" style="display: none;">
+                        <input type="hidden" name="budget_name" id="transaction_budget_name">
+                        <input type="hidden" name="budget_id" id="transaction_budget_id">
+                        <input type="hidden" name="source" id="transaction_source">
+                    </div>
+                    <div class="mb-3">
+                        <label for="transaction_amount" class="form-label">Kwota <span class="text-danger">*</span></label>
+                        <input type="text" name="amount" id="transaction_amount" class="form-control" required placeholder="0,00" pattern="[0-9]+([,.][0-9]{1,2})?">
+                        <div class="form-text">Wprowadź kwotę transakcji (max 2 miejsca po przecinku)</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="transaction_type" class="form-label">Typ transakcji <span class="text-danger">*</span></label>
+                        <select name="type" id="transaction_type" class="form-select" required>
+                            <option value="">Wybierz typ</option>
+                            <option value="income">(+) Przychód</option>
+                            <option value="expense">(-) Wydatek</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="transaction_comment" class="form-label">Komentarz <span class="text-danger">*</span></label>
+                        <input type="text" name="comment" id="transaction_comment" class="form-control" required placeholder="np. Zakup produktów spożywczych">
+                        <div class="form-text">Opisz czego dotyczy ta transakcja</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Anuluj
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Dodaj transakcję
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pl">
+    <head>
+        <meta charset="UTF-8">
+        <title>{% block title %}Budget Manager{% endblock %}</title>
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text></svg>">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        {% block stylesheets %}
+            {{ encore_entry_link_tags('app') }}
+        {% endblock %}
+
+        {% block javascripts %}
+            {{ encore_entry_script_tags('app') }}
+        {% endblock %}
+    </head>
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="{{ path('dashboard') }}">
+                    <i class="fas fa-wallet me-2"></i>Budget Manager
+                </a>
+                
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    {% if app.user %}
+                        <ul class="navbar-nav me-auto">
+                            <li class="nav-item">
+                                <a class="nav-link{{ app.request.get('_route') == 'dashboard' ? ' active' : '' }}" href="{{ path('dashboard') }}">Dashboard</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link{{ app.request.get('_route') starts with 'budgets_' ? ' active' : '' }}" href="{{ path('budgets_index') }}">Moje Budżety</a>
+                            </li>
+                        </ul>
+                        
+                        <ul class="navbar-nav ms-auto">
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-user me-1"></i>{{ app.user.email }}
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{{ path('change_password') }}">
+                                        <i class="fas fa-lock me-2"></i>Zmień hasło
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{{ path('logout') }}">
+                                        <i class="fas fa-sign-out-alt me-2"></i>Wyloguj
+                                    </a></li>
+                                </ul>
+                            </li>
+                        </ul>
+                    {% else %}
+                        <ul class="navbar-nav ms-auto">
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ path('login') }}">Logowanie</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ path('register') }}">Rejestracja</a>
+                            </li>
+                        </ul>
+                    {% endif %}
+                </div>
+            </div>
+        </nav>
+
+        <main class="container my-4">
+            {% for type, messages in app.flashes %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ type == 'error' ? 'danger' : type }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endfor %}
+
+            {% block body %}{% endblock %}
+        </main>
+
+        <footer class="bg-light py-4 mt-5">
+            <div class="container text-center">
+                <p class="mb-0 text-muted">&copy; {{ "now"|date("Y") }} <a href="https://emilian.scibisz.pl" target="_blank" class="text-decoration-none">Emilian Ścibisz</a>. Wszystkie prawa zastrzeżone.</p>
+            </div>
+        </footer>
+
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    </body>
+</html>
