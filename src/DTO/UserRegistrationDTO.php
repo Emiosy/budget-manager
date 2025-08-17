@@ -14,7 +14,7 @@ use OpenApi\Attributes as OA;
 class UserRegistrationDTO
 {
     #[Assert\NotBlank(message: 'Email is required')]
-    #[Assert\Email(message: 'Please provide a valid email address')]
+    #[Assert\Email(message: 'Please provide a valid email address', mode: 'html5')]
     #[OA\Property(
         description: 'User email address',
         format: 'email',

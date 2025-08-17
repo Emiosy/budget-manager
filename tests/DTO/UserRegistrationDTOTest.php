@@ -3,20 +3,18 @@
 namespace App\Tests\DTO;
 
 use App\DTO\UserRegistrationDTO;
-use PHPUnit\Framework\TestCase;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Validator\ConstraintViolation;
-use Symfony\Component\Validator\Validation;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-class UserRegistrationDTOTest extends TestCase
+class UserRegistrationDTOTest extends KernelTestCase
 {
     private ValidatorInterface $validator;
 
     protected function setUp(): void
     {
-        $this->validator = Validation::createValidatorBuilder()
-            ->enableAttributeMapping()
-            ->getValidator();
+        self::bootKernel();
+        $this->validator = static::getContainer()->get('validator');
     }
 
     public function testValidUserRegistrationDTO(): void
